@@ -2,14 +2,66 @@ import sys
 import os
 import re
 
+def check_syntax(script):
+    lines = script.strip().split('\n')
+    defined_variables = set()
+    valid_commands = {"shabang", "define", "if", "else if", "else", "println", "run", "srun", "end", "while"}
+    if_stack = []  # Stack to keep track of if/else if statements
+
+    for line_number, line in enumerate(lines, start=1):
+        line = line.strip()
+        if not line or line.startswith("##"):
+            continue
+
+        # Extract the command (word before first space or opening parenthesis)
+        command = re.match(r"^[a-zA-Z]+\b", line)
+        if command:
+            command = command.group()
+        else:
+            return False, f"Invalid syntax on line {line_number}"
+
+        if command not in valid_commands:
+            return False, f"Invalid command on line {line_number}: {command}"
+
+        if command == "define":
+            var_name = line.split()[1]
+            defined_variables.add(var_name)
+
+        if command in {"if", "else if"}:
+            # Check for balanced parentheses in conditions
+            condition = line[line.find("(")+1:line.find(")")]
+            if condition.count("(") != condition.count(")"):
+                return False, f"Unbalanced parentheses in condition on line {line_number}"
+
+            # Check if variables in condition are defined
+            tokens = condition.split()
+            for token in tokens:
+                if token in defined_variables or not token.isalpha():
+                    continue
+                return False, f"Undefined variable used in condition on line {line_number}: {token}"
+
+            if_stack.append(line_number)  # Push the line number of the if/else if statement
+
+        if command == "end":
+            if not if_stack:
+                return False, f"Unmatched 'end' found on line {line_number}"
+            if_stack.pop()  # Pop the matching if/else if statement
+
+    if if_stack:
+        return False, f"Missing 'end' for if/else if started on line {if_stack[-1]}"
+
+    return True, "Syntax check passed"
+
 def scriptedbash_to_bash(script):
     lines = script.strip().split('\n')
     bash_script = ""
     variable_map = {}
 
+    #print(lines)
+
     for line in lines:
         line = line.strip()
-
+        #print(line)
         if line.startswith("shabang"):
             # Extract the shebang path and add it to the bash script
             path = line.split('"')[1]
@@ -25,39 +77,68 @@ def scriptedbash_to_bash(script):
             var_value = parts[1].strip()
 
             if "userinput" in var_value:
-                # Handle user input
-                prompt = var_value.split('"')[1] if '"' in var_value else ""
-                bash_script += f'read -p "{prompt}" {var_name}\n'
+                prompt_index = var_value.find('"')
+                if prompt_index != -1:
+                    # Extract the prompt
+                    prompt = var_value[prompt_index+1:var_value.rfind('"')]
+                    bash_script += f'echo -n "{prompt} "; read {var_name}\n'
+                else:
+                    # No prompt, just use read
+                    bash_script += f'echo -n "Enter value for {var_name}: "; read {var_name}\n'
+            elif "math" in var_value:
+                # Handle mathematical operation
+                condition_start = line.find("(")
+                condition_end = line.find(")")
+                condition = line[condition_start + 1:condition_end]
+                bash_script += f'let "{var_name}={condition}"\n'
             else:
-                # Remove unnecessary double quotes for normal variables
+                # Handle normal variable definition
                 var_value = var_value.strip('"')
                 bash_script += f'{var_name}="{var_value}"\n'
             
             # Add variable to the map
-            variable_map[var_name] = var_name  # Map ScriptedBash variable name to itself
+            variable_map[var_name] = var_name
 
-        elif line.startswith("if") or line.startswith("else if"):
+        elif line.startswith("if") or line.startswith("else if") or line.startswith("else"):
             # Handle if and else-if statements
             condition_start = line.find("(")
             condition_end = line.find(")")
-            condition = line[condition_start+1:condition_end]
+            condition = line[condition_start + 1:condition_end]
 
-            # Replace ScriptedBash variables with Bash variables (prepend $)
-            bash_condition = condition
-            for var_name in variable_map:
-                print(var_name)
-                # Check if the variable is in the condition and prepend with $
-                if var_name in bash_condition:
-                    #print(bash_condition)
-                    bash_condition = bash_condition.replace(var_name, f"${var_name}")
+            # Prepare the Bash condition string
+            bash_condition = ""
 
-            # Replace '==' with '=' for Bash conditional
-            bash_condition = bash_condition.replace("==", "=")
+            # Split the condition into tokens and process each one
+            tokens = condition.split()
+            for token in tokens:
+                if token in variable_map:
+                    # Append $ to variables
+                    bash_condition += f" ${variable_map[token]}"
+                else:
+                    # Append other elements as is
+                    bash_condition += f" {token}"
 
+            # Construct the if or elif statement
             if line.startswith("if"):
-                bash_script += f"if [ {bash_condition} ]; then\n"
-            else:
-                bash_script += f"elif [ {bash_condition} ]; then\n"
+                bash_script += f"if [{bash_condition} ]; then\n"
+            elif line.startswith("else if"):
+                bash_script += f"elif [{bash_condition} ]; then\n"
+            elif line.startswith("else"):
+                bash_script += f"else\n"
+
+        elif line.startswith("while"):
+            condition_start = line.find("(")
+            condition_end = line.find(")")
+            condition = line[condition_start + 1:condition_end]
+            bash_condition = ""
+            tokens = condition.split()
+            for token in tokens:
+                if token in variable_map:
+                    bash_condition += f" ${variable_map[token]}"
+                else:
+                    # Append other elements as is
+                    bash_condition += f" {token}"
+            bash_script += f"while [ {bash_condition} ]; do\n"
 
         elif line.startswith("println"):
             # Handle print statement with variable support
@@ -85,6 +166,9 @@ def scriptedbash_to_bash(script):
         elif line == "end":
             bash_script += "fi\n"
 
+        elif line == "wend":
+            bash_script += "done\n"
+
         # Add more cases here as needed for other ScriptedBash structures
 
     return bash_script
@@ -98,7 +182,12 @@ file_path = sys.argv[1]
 try:
     with open(file_path, 'r') as file:
         scriptedbash_code = file.read()
-        bash_script = scriptedbash_to_bash(scriptedbash_code)
+        syntax_ok, message = check_syntax(scriptedbash_code)
+        if syntax_ok:
+            bash_script = scriptedbash_to_bash(scriptedbash_code)
+        else:
+            print(f"Syntax Error: {message}")
+        #bash_script = scriptedbash_to_bash(scriptedbash_code)
 
     # Determine the output file path
     base, _ = os.path.splitext(file_path)

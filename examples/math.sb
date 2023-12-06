@@ -1,0 +1,9 @@
+shabang("/bin/zsh")
+
+define math1 = math(10+10)
+define math2 = math(10*10)
+define math3 = math(10*10+26)
+
+println "[math1]"
+println "[math2]"
+println "[math3]"

@@ -1,0 +1,41 @@
+shabang("/bin/bash")
+
+define variable0 = test0
+
+if (variable0 == "test0"):
+    println "if statement works"
+end
+
+define variable1 = test1
+
+if (variable1 == "test1"):
+    println "else if statement works if else if is false"
+else if (variable1 == "test2"):
+    println "it doesnt work"
+end
+
+define variabe2 = test2
+
+if (variabe2 == "test1"):
+    println "it doesnt works"
+else if (variabe2 == "test2"):
+    println "else if statement works"
+end
+
+define variabe3 = test2
+
+if (variabe2 == "test1"):
+    println "it doesnt works"
+else if (variabe2 == "tes2"):
+    println "not works"
+else:
+    println "else statement works"
+end
+
+define number = 10
+
+if (number n== 10):
+    println "its working"
+else:
+    println "it broke itself"
+end

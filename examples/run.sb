@@ -1,0 +1,9 @@
+shabang("/bin/bash")
+
+run("mkdir ./test")
+run("mkdir ./test2")
+run("mv ./test ./test2/test")
+
+srun("mkdir ./sudo")
+srun("mkdir ./sudoed")
+srun("mv ./sudo ./sudoed/sudo")
