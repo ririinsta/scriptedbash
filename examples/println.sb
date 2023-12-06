@@ -1,0 +1,9 @@
+shabang("/bin/bash")
+
+## basic println
+println "hello there"
+
+## println with a variable
+
+define word = hello
+println "[word] how are you"

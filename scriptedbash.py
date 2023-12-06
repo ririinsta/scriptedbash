@@ -1,5 +1,6 @@
 import sys
 import os
+import re
 
 def scriptedbash_to_bash(script):
     lines = script.strip().split('\n')
@@ -14,25 +15,44 @@ def scriptedbash_to_bash(script):
             path = line.split('"')[1]
             bash_script += f"#!{path}\n\n"
 
+        elif line.startswith("##"):
+            # Ignore comments
+            continue
+
         elif line.startswith("define"):
-            # Handle variable definition
-            parts = line.split('=')
+            parts = line.split('=', 1)  # Split on the first '=' only
             var_name = parts[0].split()[1].strip()
             var_value = parts[1].strip()
-            bash_var_name = f"var_{var_name}"  # create a bash-friendly variable name
-            variable_map[var_name] = bash_var_name  # map ScriptedBash var name to Bash var name
-            bash_script += f'{bash_var_name}="{var_value}"\n'
+
+            if "userinput" in var_value:
+                # Handle user input
+                prompt = var_value.split('"')[1] if '"' in var_value else ""
+                bash_script += f'read -p "{prompt}" {var_name}\n'
+            else:
+                # Remove unnecessary double quotes for normal variables
+                var_value = var_value.strip('"')
+                bash_script += f'{var_name}="{var_value}"\n'
+            
+            # Add variable to the map
+            variable_map[var_name] = var_name  # Map ScriptedBash variable name to itself
 
         elif line.startswith("if") or line.startswith("else if"):
             # Handle if and else-if statements
             condition_start = line.find("(")
             condition_end = line.find(")")
             condition = line[condition_start+1:condition_end]
-            bash_condition = condition
 
-            for var_name in variable_map.keys():
-                # Replace ScriptedBash variables with Bash variables
-                bash_condition = bash_condition.replace(var_name, variable_map[var_name])
+            # Replace ScriptedBash variables with Bash variables (prepend $)
+            bash_condition = condition
+            for var_name in variable_map:
+                print(var_name)
+                # Check if the variable is in the condition and prepend with $
+                if var_name in bash_condition:
+                    #print(bash_condition)
+                    bash_condition = bash_condition.replace(var_name, f"${var_name}")
+
+            # Replace '==' with '=' for Bash conditional
+            bash_condition = bash_condition.replace("==", "=")
 
             if line.startswith("if"):
                 bash_script += f"if [ {bash_condition} ]; then\n"
@@ -40,8 +60,13 @@ def scriptedbash_to_bash(script):
                 bash_script += f"elif [ {bash_condition} ]; then\n"
 
         elif line.startswith("println"):
-            # Handle print statement
+            # Handle print statement with variable support
             message = line.split('"')[1]
+            # Find and replace all [variable] occurrences with Bash variables
+            variables_in_message = re.findall(r'\[([^\]]+)\]', message)
+            for var in variables_in_message:
+                bash_var_name = variable_map.get(var, var)  # Get the mapped bash variable name
+                message = message.replace(f'[{var}]', f'${bash_var_name}')
             bash_script += f'echo "{message}"\n'
 
         elif line.startswith("run"):
@@ -53,7 +78,7 @@ def scriptedbash_to_bash(script):
             # Handle sudo run command
             command = line.split('"')[1]
             if command == "request":
-                bash_script += "sudo echo \"\" # empty sudo command to make it so the user doesn't have to repeatedly type pass in\n"
+                bash_script += "sudo echo \"\"\n"
             else:
                 bash_script += f"sudo {command}\n"
 
