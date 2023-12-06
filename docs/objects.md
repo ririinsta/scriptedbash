@@ -4,7 +4,9 @@
 
 ### Syntax
 
-- run(<bash command>)
+```
+run(<bash command>)
+```
 
 ### Use
 
@@ -21,7 +23,9 @@ run("chmod +x script.sh")
 
 ### Syntax
 
-- srun(<bash command>)
+```
+srun(<bash command>)
+```
 
 ### Use
 
