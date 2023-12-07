@@ -1,0 +1,6 @@
+shabang("/bin/bash")
+
+for(i in {1..10}):
+    defineInt result = math(i * 2)
+    println("Result is: [result]")
+fend

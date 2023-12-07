@@ -279,3 +279,38 @@ Increases a variable by a amount
 ```
 increase i 1
 ```
+
+## Comments
+
+### Syntax / Example
+
+```
+## This is a comment
+```
+
+### Use
+
+Comments only show up in ScriptedBash, they do not translate over to bash.
+
+## for Statement
+
+### Syntax 
+
+```
+for (<condition>):
+<code to run>
+fend
+```
+
+### Use
+
+Goes through a list and runs code for each item (correct?)
+
+TODO: write better explaination
+
+### Example
+
+for (i in {1..10}):
+    defineInt result = math(i * 2)
+    println("Result is: [result]")
+fend

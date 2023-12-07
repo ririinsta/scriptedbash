@@ -5,7 +5,7 @@ import re
 def check_syntax(script):
     lines = script.strip().split('\n')
     defined_variables = set()
-    valid_commands = {"shabang", "define", "defineInt", "if", "else if", "else", "println", "run", "srun", "end", "while", "bash", "wend", "increase"}
+    valid_commands = {"shabang", "define", "defineInt", "if", "else if", "else", "println", "run", "srun", "end", "while", "bash", "wend", "increase", "for", "fend"}
     if_stack = []  # Stack to keep track of if/else if statements
 
     for line_number, line in enumerate(lines, start=1):
@@ -200,7 +200,7 @@ def scriptedbash_to_bash(script):
         elif line == "end":
             bash_script += "fi\n"
 
-        elif line == "wend":
+        elif line == "wend" or line == "fend":
             bash_script += "done\n"
 
         elif line.startswith("bash"):
@@ -209,6 +209,12 @@ def scriptedbash_to_bash(script):
             condition = line[condition_start + 1:condition_end]
             bash_script += condition + "\n"
 
+        elif line.startswith("for"):
+            condition_start = line.find("(")
+            condition_end = line.find(")")
+            condition = line[condition_start + 1:condition_end]
+            bash_script += f"for {condition}; do\n"
+        
         # Add more cases here as needed for other ScriptedBash structures
 
     return bash_script
@@ -225,18 +231,17 @@ try:
         syntax_ok, message = check_syntax(scriptedbash_code)
         if syntax_ok:
             bash_script = scriptedbash_to_bash(scriptedbash_code)
+            # Determine the output file path
+            base, _ = os.path.splitext(file_path)
+            output_file_path = base + ".sh"
+
+            with open(output_file_path, 'w') as output_file:
+                output_file.write(bash_script)
+
+            print(f"Bash script written to {output_file_path}")
         else:
             print(f"Syntax Error: {message}")
         #bash_script = scriptedbash_to_bash(scriptedbash_code)
-
-    # Determine the output file path
-    base, _ = os.path.splitext(file_path)
-    output_file_path = base + ".sh"
-
-    with open(output_file_path, 'w') as output_file:
-        output_file.write(bash_script)
-
-    print(f"Bash script written to {output_file_path}")
 
 except FileNotFoundError:
     print(f"Error: File not found - {file_path}")
