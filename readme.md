@@ -1,11 +1,11 @@
-# scripted bash
+# ScriptedBash
 
 ## why?
 
 - i hate writing bash scripts
-    - it makes me want to bash my head into a nail repeatedly
+    - it makes me want to **bash** my head
 - this is a little better
 
 ## docs?
 
-[here](/docs/objects.md)
+[here](/docs/readme.md)

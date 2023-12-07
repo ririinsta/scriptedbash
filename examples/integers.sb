@@ -1,0 +1,6 @@
+shabang("/bin/bash")
+
+defineInt i = 5
+defineInt o = 5
+defineInt q = math(i + o)
+println "[q]"

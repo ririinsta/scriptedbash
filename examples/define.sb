@@ -1,11 +1,14 @@
-shabang("/bin/zsh")
+shabang("/bin/bash")
 
 define test0 = define0
 println "[test0]"
+
 define test1 = userinput("hello whats your name? ")
 println "[test1]"
+
 println "userinput without prompt. type something and hit enter"
 define test2 = userinput()
 println "[test2]"
+
 define test3 = math(10+20)
 println "[test3]"

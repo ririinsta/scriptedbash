@@ -163,6 +163,8 @@ define variable1 = "hello"
 
 ```
 define <varname> = math(<equation>)
+## or
+defineInt <varname> = math(<equation>)
 ```
 
 ### Use
@@ -173,6 +175,7 @@ Output a the result of a equation to a variable. Can only be used in the define 
 
 ```
 define math1 = math(10+10)
+defineInt math2 = math(10+10)
 ```
 
 ## userinput Statement
@@ -201,4 +204,78 @@ define var2 = userinput()
 
 ## while Statement
 
-##Coming soon.
+### Syntax
+
+```
+while (<condition>):
+## code
+wend
+```
+
+### Use
+
+Runs a command while the condition is true.
+
+### Examples
+
+```
+while (i -le 5):
+    println ("hello")
+    increase i 1
+wend
+```
+
+## bash Statement
+
+### Syntax
+
+```
+bash(<line to put in file>)
+```
+
+### Use
+
+Allows you to define a line of bash to be put into the script. This is used for when something hasnt been implemented into scriptedbash yet.
+
+### Examples
+
+```
+bash (echo "hello")
+```
+
+## defineInt Statement
+
+### Syntax
+
+```
+defineInt <variable name> = <value>
+```
+
+### Use
+
+Defines a integer.
+
+### Examples
+
+```
+defineInt i = 0
+defineInt math1 = math(10+10)
+```
+
+## increase
+
+### Syntax
+
+```
+increase <variable> <amount>
+```
+
+### Use
+
+Increases a variable by a amount
+
+### Examples
+
+```
+increase i 1
+```

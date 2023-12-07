@@ -1,0 +1,8 @@
+shabang("/bin/bash")
+
+defineInt i = 0
+
+while (i -le 5):
+    println ("hello")
+    increase i 1
+wend

@@ -5,7 +5,7 @@ import re
 def check_syntax(script):
     lines = script.strip().split('\n')
     defined_variables = set()
-    valid_commands = {"shabang", "define", "if", "else if", "else", "println", "run", "srun", "end", "while"}
+    valid_commands = {"shabang", "define", "defineInt", "if", "else if", "else", "println", "run", "srun", "end", "while", "bash", "wend", "increase"}
     if_stack = []  # Stack to keep track of if/else if statements
 
     for line_number, line in enumerate(lines, start=1):
@@ -71,8 +71,9 @@ def scriptedbash_to_bash(script):
             # Ignore comments
             continue
 
-        elif line.startswith("define"):
+        elif line.startswith("define "):
             parts = line.split('=', 1)  # Split on the first '=' only
+            #print(parts)
             var_name = parts[0].split()[1].strip()
             var_value = parts[1].strip()
 
@@ -87,15 +88,44 @@ def scriptedbash_to_bash(script):
                     bash_script += f'echo -n "Enter value for {var_name}: "; read {var_name}\n'
             elif "math" in var_value:
                 # Handle mathematical operation
-                condition_start = line.find("(")
-                condition_end = line.find(")")
-                condition = line[condition_start + 1:condition_end]
-                bash_script += f'let "{var_name}={condition}"\n'
+                condition_start = var_value.find("(")
+                condition_end = var_value.find(")")
+                math_expression = var_value[condition_start + 1:condition_end]
+
+                # Replace ScriptedBash variables with Bash variables in the math expression
+                for var_in_expression in variable_map:
+                    math_expression = math_expression.replace(var_in_expression, f"${variable_map[var_in_expression]}")
+
+                bash_script += f'let "{var_name}={math_expression}"\n'
+
             else:
                 # Handle normal variable definition
                 var_value = var_value.strip('"')
                 bash_script += f'{var_name}="{var_value}"\n'
             
+            # Add variable to the map
+            variable_map[var_name] = var_name
+
+        elif line.startswith("defineInt "):
+            parts = line.split('=', 1)  # Split on the first '=' only
+            var_name = parts[0].split()[1].strip()
+            var_value = parts[1].strip()
+
+            if "math" in var_value:
+                # Handle mathematical operation for integer
+                condition_start = var_value.find("(")
+                condition_end = var_value.find(")")
+                math_expression = var_value[condition_start + 1:condition_end]
+
+                # Replace ScriptedBash variables with Bash variables in the math expression
+                for var_in_expression in variable_map:
+                    math_expression = math_expression.replace(var_in_expression, f"${variable_map[var_in_expression]}")
+
+                bash_script += f'let "{var_name}={math_expression}"\n'
+            else:
+                # Handle normal integer variable definition
+                bash_script += f'{var_name}={var_value}\n'
+
             # Add variable to the map
             variable_map[var_name] = var_name
 
@@ -159,15 +189,25 @@ def scriptedbash_to_bash(script):
             # Handle sudo run command
             command = line.split('"')[1]
             if command == "request":
-                bash_script += "sudo echo \"\"\n"
+                bash_script += f"sudo echo \"\"\n"
             else:
                 bash_script += f"sudo {command}\n"
+
+        elif line.startswith("increase"):
+            parts = line.split(' ', 2)
+            bash_script += f"(({parts[1]} += {parts[2]}))\n"
 
         elif line == "end":
             bash_script += "fi\n"
 
         elif line == "wend":
             bash_script += "done\n"
+
+        elif line.startswith("bash"):
+            condition_start = line.find("(")
+            condition_end = line.find(")")
+            condition = line[condition_start + 1:condition_end]
+            bash_script += condition + "\n"
 
         # Add more cases here as needed for other ScriptedBash structures
 

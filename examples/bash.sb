@@ -1,0 +1,4 @@
+shabang("/bin/zsh")
+
+bash (echo "hello")
+bash (sudo echo "hello")
